@@ -16,10 +16,12 @@ def read_conllu(file_path):
     Reads a CoNLL-U file and extracts sentences and corresponding POS tags.
     """
     sentences = []
+    lemmas = []
     pos_tags = []
     
     with open(file_path, "r", encoding="utf-8") as file:
         sentence_tokens = []
+        sentence_lemmas = []
         sentence_tags = []
         
         for line in file:
@@ -28,8 +30,10 @@ def read_conllu(file_path):
             if not line or line.startswith("#"):  # Skip comments and empty lines
                 if sentence_tokens:  # End of a sentence
                     sentences.append(sentence_tokens)
+                    lemmas.append(lemmas)
                     pos_tags.append(sentence_tags)
                     sentence_tokens = []
+                    sentence_lemmas = []
                     sentence_tags = []
                 continue
             
@@ -38,17 +42,20 @@ def read_conllu(file_path):
                 continue
             
             token = fields[1]  # The word token
+            lemma = fields[2]  # The Lemma
             pos_tag = fields[3]  # The POS tag (UPOS)
             
             sentence_tokens.append(token)
+            sentence_lemmas.append(lemma)
             sentence_tags.append(pos_tag)
         
         # Append last sentence if file does not end with a newline
         if sentence_tokens:
             sentences.append(sentence_tokens)
             pos_tags.append(sentence_tags)
+            lemmas.append(sentence_lemmas)
     
-    return sentences, pos_tags
+    return sentences, lemmas, pos_tags
 
 def save_to_file(data, output_file):
     """
@@ -72,9 +79,10 @@ def process_and_save(dataset_path, files):
         file_path = os.path.join(dataset_path, file_name)
         print(f"Processing {split_name} data from {file_path}...")
         
-        sentences, pos_tags = read_conllu(file_path)
+        sentences, lemmas, pos_tags = read_conllu(file_path)
         data = {
             "sentences": sentences,
+            "lemmas": lemmas,
             "pos_tags": pos_tags
         }
         

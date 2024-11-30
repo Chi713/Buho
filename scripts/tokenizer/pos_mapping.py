@@ -36,6 +36,7 @@ def update_data_with_ids(data, pos_to_id):
     """
     updated_data = {
         "sentences": data["sentences"],
+        "lemmas": data["lemmas"],
         "pos_tags": [[pos_to_id[tag] for tag in tags] for tags in data["pos_tags"]]
     }
     return updated_data

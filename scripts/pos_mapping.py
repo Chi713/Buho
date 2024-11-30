@@ -1,10 +1,13 @@
+import os
 import json
 from collections import defaultdict
 
 # Paths to your JSON files
-TRAIN_FILE = "train_data.json"
-DEV_FILE = "dev_data.json"
-TEST_FILE = "test_data.json"
+DATA_PATH = os.environ.get('BUHO_DATA_PATH')  # Replace with the actual dataset path
+TRAIN_FILE = os.path.join(DATA_PATH, "train_data.json")
+DEV_FILE = os.path.join(DATA_PATH, "dev_data.json")
+TEST_FILE = os.path.join(DATA_PATH, "test_data.json")
+print(TRAIN_FILE)
 
 def load_data(file_path):
     """Loads the JSON data file."""
@@ -62,9 +65,9 @@ def main():
     test_data_updated = update_data_with_ids(test_data, pos_to_id)
     
     # Save the updated data
-    save_data(train_data_updated, "train_data_updated.json")
-    save_data(dev_data_updated, "dev_data_updated.json")
-    save_data(test_data_updated, "test_data_updated.json")
+    save_data(train_data_updated, os.path.join(DATA_PATH, "train_data_updated.json"))
+    save_data(dev_data_updated, os.path.join(DATA_PATH, "dev_data_updated.json"))
+    save_data(test_data_updated, os.path.join(DATA_PATH, "test_data_updated.json"))
 
 if __name__ == "__main__":
     main()

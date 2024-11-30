@@ -1,3 +1,4 @@
+import os
 import json
 import torch
 from transformers import AutoTokenizer
@@ -6,9 +7,10 @@ from transformers import AutoTokenizer
 tokenizer = AutoTokenizer.from_pretrained("dccuchile/bert-base-spanish-wwm-cased")
 
 # Paths to your data files
-TRAIN_FILE = "/global/cfs/cdirs/m4431/buho/Data/train_data_updated.json"
-DEV_FILE = "/global/cfs/cdirs/m4431/buho/Data/dev_data_updated.json"
-TEST_FILE = "/global/cfs/cdirs/m4431/buho/Data/test_data_updated.json"
+DATA_PATH = os.environ.get('BUHO_DATA_PATH')  # Replace with the actual dataset path
+TRAIN_FILE = os.path.join(DATA_PATH, "train_data_updated.json")
+DEV_FILE = os.path.join(DATA_PATH, "dev_data_updated.json")
+TEST_FILE = os.path.join(DATA_PATH, "test_data_updated.json")
 
 # Load your data
 def load_data(file_path):
@@ -87,6 +89,6 @@ if __name__ == "__main__":
     # Process and save the datasets
     train_inputs, dev_inputs, test_inputs = process_datasets(TRAIN_FILE, DEV_FILE, TEST_FILE)
 
-    save_tokenized_data(train_inputs, "train_inputs.pt")
-    save_tokenized_data(dev_inputs, "dev_inputs.pt")
-    save_tokenized_data(test_inputs, "test_inputs.pt")
+    save_tokenized_data(train_inputs, os.path.join(DATA_PATH, "train_inputs.pt"))
+    save_tokenized_data(dev_inputs, os.path.join(DATA_PATH, "dev_inputs.pt"))
+    save_tokenized_data(test_inputs, os.path.join(DATA_PATH, "test_inputs.pt"))

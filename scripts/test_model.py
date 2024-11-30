@@ -1,5 +1,11 @@
+import os
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 import torch
+import time
+
+# define model path
+MODELS_PATH = os.environ.get('BUHO_MODEL_PATH')
+MODEL_PATH = os.path.join(MODELS_PATH, "pos_tagging_model")
 
 # Define ID_TO_POS mapping
 ID_TO_POS = {
@@ -10,18 +16,22 @@ ID_TO_POS = {
 }
 
 # Load model and tokenizer
-model = AutoModelForTokenClassification.from_pretrained("pos_tagging_model")
-tokenizer = AutoTokenizer.from_pretrained("pos_tagging_model")
+start_time = time.time()
+model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 model.eval()
+load_time = time.time()
 
 # Test sentence
 sentence = "La Unión Europea fue fundada en 1993."
 
 # Tokenize input without `is_split_into_words`
 inputs = tokenizer(sentence, return_tensors="pt", truncation=True)
+tokenize_time = time.time()
 
 # Run inference
 outputs = model(**inputs)
+tagging_time = time.time()
 
 # Decode predictions
 predictions = torch.argmax(outputs.logits, dim=-1)
@@ -34,3 +44,7 @@ for token, tag in zip(tokens, predicted_tags):
     if token in ["[CLS]", "[SEP]"]:
         continue
     print(f"{token}: {ID_TO_POS.get(tag, 'UNKNOWN')}")
+print(f"tokenizing time: {load_time - start_time}")
+print(f"tokenizing time: {tokenize_time - load_time}")
+print(f"tagging time: {tagging_time - tokenize_time}")
+print(f"total time: {tagging_time - start_time}")

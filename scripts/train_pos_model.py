@@ -1,3 +1,4 @@
+import os
 import torch
 from torch.utils.data import Dataset
 from transformers import (
@@ -11,9 +12,11 @@ from sklearn.metrics import classification_report
 import numpy as np
 
 # Paths to tokenized data
-TRAIN_PATH = "train_inputs.pt"
-DEV_PATH = "dev_inputs.pt"
-TEST_PATH = "test_inputs.pt"
+DATA_PATH = os.environ.get('BUHO_DATA_PATH')
+MODEL_PATH = os.environ.get('BUHO_MODEL_PATH')
+TRAIN_PATH = os.path.join(DATA_PATH, "train_inputs.pt")
+DEV_PATH = os.path.join(DATA_PATH, "dev_inputs.pt")
+TEST_PATH = os.path.join(DATA_PATH, "test_inputs.pt")
 
 # POS Mapping
 POS_TO_ID = {'ADJ': 0, 'ADP': 1, 'ADV': 2, 'AUX': 3, 'CCONJ': 4, 'DET': 5, 'INTJ': 6, 'NOUN': 7, 'NUM': 8, 
@@ -51,14 +54,14 @@ data_collator = DataCollatorForTokenClassification(tokenizer)
 
 # Training Arguments
 training_args = TrainingArguments(
-    output_dir="./results",
+    output_dir="../results",
     eval_strategy="epoch",  # Replace evaluation_strategy with eval_strategy
     learning_rate=5e-5,
     per_device_train_batch_size=16,
     per_device_eval_batch_size=16,
     num_train_epochs=3,
     weight_decay=0.01,
-    logging_dir="./logs",
+    logging_dir="../logs",
     save_total_limit=2,
     load_best_model_at_end=True,
     report_to="none",
@@ -108,6 +111,6 @@ print(classification_report(
 ))
 
 # Save Model
-model.save_pretrained("pos_tagging_model")
-tokenizer.save_pretrained("pos_tagging_model")
+model.save_pretrained(os.path.join(MODEL_PATH, "pos_tagging_model"))
+tokenizer.save_pretrained(os.path.join(MODEL_PATH, "pos_tagging_model"))
 print("Model and tokenizer saved to 'pos_tagging_model'.")

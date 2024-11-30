@@ -3,6 +3,14 @@
 **$BUHO_DATA_PATH** is training/testing data path
 **BUHO_MODEL_PATH** is models path
 
+## Setup
+
+create venv with required libraries
+
+export environment variables
+- for example .env file we put the dataset in the /cache folder
+
+
 ## Example .env file
 
 export BUHO_DIR= /path/to/work/dir

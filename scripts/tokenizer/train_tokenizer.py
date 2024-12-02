@@ -98,7 +98,14 @@ for pred, label in zip(predictions, labels):
         if l != -100:  # Ignore padding
             y_pred.append(p)
             y_true.append(l)
-            
+            unique_labels = sorted(set(y_true))  # Ensure unique labels in the test set
+            filtered_target_names = [ID_TO_POS[i] for i in unique_labels]
+            print(classification_report(
+            y_true,
+            y_pred,
+            target_names=filtered_target_names,
+            labels=unique_labels  # Use only the labels present in the test set
+        ))
 
 # Dynamically include only the labels present in the test set
 unique_labels = sorted(set(y_true))  # Ensure unique labels in the test set

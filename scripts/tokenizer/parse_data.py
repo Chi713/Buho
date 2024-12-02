@@ -30,7 +30,7 @@ def read_conllu(file_path):
             if not line or line.startswith("#"):  # Skip comments and empty lines
                 if sentence_tokens:  # End of a sentence
                     sentences.append(sentence_tokens)
-                    lemmas.append(lemmas)
+                    lemmas.append(sentence_lemmas)
                     pos_tags.append(sentence_tags)
                     sentence_tokens = []
                     sentence_lemmas = []
@@ -61,12 +61,12 @@ def save_to_file(data, output_file):
     """
     Saves the processed data to a JSON file.
     """
-    
     # output_file_path = os.path.join(DATA_PATH, "data_cache")
     output_file_path = DATA_PATH
     pathlib.Path(output_file_path).mkdir(parents=True, exist_ok=True) 
     print(output_file_path)
     output_file = os.path.join(output_file_path, output_file)
+    print(output_file)
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
     print(f"Saved {output_file} with {len(data['sentences'])} sentences.")
@@ -76,6 +76,8 @@ def process_and_save(dataset_path, files):
     Processes each dataset split and saves them to separate files.
     """
     for split_name, file_name in files.items():
+        print(type(dataset_path))
+        print(type(file_name))
         file_path = os.path.join(dataset_path, file_name)
         print(f"Processing {split_name} data from {file_path}...")
         
@@ -87,10 +89,13 @@ def process_and_save(dataset_path, files):
         }
         
         output_file = f'{split_name}_data.json'
+        print(output_file)
+        
         save_to_file(data, output_file)
 
 def main():
     process_and_save(CONLLU_PATH, FILES)
 
 if __name__ == "__main__":
+    print(CONLLU_PATH)
     main()

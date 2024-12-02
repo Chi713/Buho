@@ -14,19 +14,91 @@ ID_TO_POS = {
     10: 'PRON', 11: 'PROPN', 12: 'PUNCT', 13: 'SCONJ',
     14: 'SYM', 15: 'VERB', 16: 'X', 17: '_'
 }
+# POS Mapping
+POS_TO_ID = {'ADJ': 0, 'ADP': 1, 'ADV': 2, 'AUX': 3, 'CCONJ': 4, 'DET': 5, 'INTJ': 6, 'NOUN': 7, 'NUM': 8, 
+             'PART': 9, 'PRON': 10, 'PROPN': 11, 'PUNCT': 12, 'SCONJ': 13, 'SYM': 14, 'VERB': 15, 'X': 16, '_': 17}
 
 # Load model and tokenizer
 start_time = time.time()
 model = AutoModelForTokenClassification.from_pretrained(MODEL_PATH)
 tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+#tokenizer = AutoTokenizer.from_pretrained("dccuchile/bert-base-spanish-wwm-cased")
+#model = AutoModelForTokenClassification.from_pretrained(
+#    "dccuchile/bert-base-spanish-wwm-cased", num_labels=len(POS_TO_ID)
+#)
 model.eval()
 load_time = time.time()
 
 # Test sentence
-sentence = "La Unión Europea fue fundada en 1993."
+# Sentence split into words
+sentence =         [
+            "Partidario",
+            "de",
+            "la",
+            "\"",
+            "perestroika",
+            "\"",
+            "de",
+            "Mijail",
+            "Gorbachov",
+            "en",
+            "la",
+            "Unión",
+            "Soviética",
+            ",",
+            "en",
+            "1989",
+            "entró",
+            "en",
+            "conflicto",
+            "con",
+            "Yívkov",
+            ",",
+            "líder",
+            "durante",
+            "35",
+            "años",
+            "del",
+            "de",
+            "el",
+            "Partido",
+            "Comunista",
+            "y",
+            "del",
+            "de",
+            "el",
+            "Estado",
+            "búlgaro",
+            ",",
+            "y",
+            "le",
+            "acusó",
+            "en",
+            "una",
+            "carta",
+            "abierta",
+            "de",
+            "utilizar",
+            "métodos",
+            "poco",
+            "democráticos",
+            "de",
+            "gobierno",
+            "."
+        ]
+text = 'Partidario de la "perestroika" de Mijail Gorbachov en la Unión Soviética, en 1989 entró en conflicto con Yívkov, líder durante 35 años del Partido Comunista y del Estado búlgaro, y le acusó en una carta abierta de utilizar métodos poco democráticos de gobierno.'
 
-# Tokenize input without `is_split_into_words`
-inputs = tokenizer(sentence, return_tensors="pt", truncation=True)
+
+# Tokenize input with `is_split_into_words`
+inputs = tokenizer(text, is_split_into_words=False, return_tensors="pt", truncation=True)
+
+# Print tokenized output for verification
+tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+print("Tokens:", tokens)
+print("perestroika" in tokenizer.get_vocab())
+print("Mijail" in tokenizer.get_vocab())
+print("Gorbachov" in tokenizer.get_vocab())
+
 tokenize_time = time.time()
 
 # Run inference

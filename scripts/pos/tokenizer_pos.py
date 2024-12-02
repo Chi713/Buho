@@ -19,7 +19,7 @@ def load_data(file_path):
         return json.load(f)
 
 # Tokenize and align labels
-def tokenize_and_align_labels(sentences, pos_tags, max_length=128):
+def tokenize_and_align_labels(sentences, pos_tags, max_length=256):
     """
     Tokenizes sentences and aligns POS tags with subword tokens.
     
@@ -89,6 +89,6 @@ if __name__ == "__main__":
     # Process and save the datasets
     train_inputs, dev_inputs, test_inputs = process_datasets(TRAIN_FILE, DEV_FILE, TEST_FILE)
 
-    save_tokenized_data(train_inputs, os.path.join(DATA_PATH, "train_inputs.pt"))
-    save_tokenized_data(dev_inputs, os.path.join(DATA_PATH, "dev_inputs.pt"))
-    save_tokenized_data(test_inputs, os.path.join(DATA_PATH, "test_inputs.pt"))
+    save_tokenized_data(train_inputs, os.path.join(DATA_PATH, "train_inputs_pos.pt"))
+    save_tokenized_data(dev_inputs, os.path.join(DATA_PATH, "dev_inputs_pos.pt"))
+    save_tokenized_data(test_inputs, os.path.join(DATA_PATH, "test_inputs_pos.pt"))

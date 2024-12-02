@@ -19,17 +19,9 @@ def load_data(file_path):
         return json.load(f)
 
 # Tokenize and align labels
-def tokenize_and_align_labels(sentences, pos_tags, max_length=128):
+def tokenize_and_align_labels(sentences, pos_tags, lemma_tags, max_length=128):
     """
-    Tokenizes sentences and aligns POS tags with subword tokens.
-    
-    Parameters:
-    - sentences: List of sentences (each sentence is a list of words).
-    - pos_tags: List of POS tag IDs corresponding to each word in the sentences.
-    - max_length: Maximum sequence length for padding/truncation.
-
-    Returns:
-    - A dictionary containing tokenized input IDs, attention masks, and aligned labels.
+    Tokenizes sentences and aligns POS tags and lemmas with subword tokens.
     """
     inputs = tokenizer(
         sentences,
@@ -40,30 +32,43 @@ def tokenize_and_align_labels(sentences, pos_tags, max_length=128):
         return_tensors="pt",  # Return PyTorch tensors
     )
 
-    labels = []
-    for i, sentence in enumerate(sentences):
+    upos = []
+    lemmas = []
+    for i, _ in enumerate(sentences):
         word_ids = inputs.word_ids(batch_index=i)  # Map subword tokens to original words
-        label_ids = []
+        upos_ids = []
+        lemma_ids = []
         previous_word_idx = None
 
         for word_idx in word_ids:
             if word_idx is None or word_idx == previous_word_idx:
                 # Set -100 for padding and subword tokens (ignored during loss computation)
-                label_ids.append(-100)
+                upos_ids.append(-100)
+                lemma_ids.append(-100)
             else:
-                label_ids.append(pos_tags[i][word_idx])  # Align POS tag to the original word
+                if word_idx < len(pos_tags[i]) and word_idx < len(lemma_tags[i]):
+                    # Align POS tag and lemma to the original word
+                    upos_ids.append(pos_tags[i][word_idx])
+                    lemma_ids.append(tokenizer.convert_tokens_to_ids(lemma_tags[i][word_idx]))
+                    
+                else:
+                    # Handle cases where word_idx exceeds the lemma or POS tag length
+                    upos_ids.append(-100)
+                    lemma_ids.append(-100)
             previous_word_idx = word_idx
 
-        labels.append(label_ids)
+        upos.append(upos_ids)
+        lemmas.append(lemma_ids)
 
-    # Add aligned labels to inputs
-    inputs["labels"] = torch.tensor(labels)
+    # Add aligned upos and lemmas to inputs
+    inputs["upos"] = torch.tensor(upos)
+    inputs["lemmas"] = torch.tensor(lemmas)
     return inputs
 
 # Process datasets
 def process_datasets(train_file, dev_file, test_file):
     """
-    Tokenizes and aligns labels for train, dev, and test datasets.
+    Tokenizes and aligns upos for train, dev, and test datasets.
     
     Returns:
     - Tokenized PyTorch datasets for train, dev, and test splits.
@@ -72,9 +77,9 @@ def process_datasets(train_file, dev_file, test_file):
     dev_data = load_data(dev_file)
     test_data = load_data(test_file)
 
-    train_inputs = tokenize_and_align_labels(train_data["sentences"], train_data["pos_tags"])
-    dev_inputs = tokenize_and_align_labels(dev_data["sentences"], dev_data["pos_tags"])
-    test_inputs = tokenize_and_align_labels(test_data["sentences"], test_data["pos_tags"])
+    train_inputs = tokenize_and_align_labels(train_data["sentences"], train_data["pos_tags"], train_data["lemmas"])
+    dev_inputs = tokenize_and_align_labels(dev_data["sentences"], dev_data["pos_tags"], train_data["lemmas"])
+    test_inputs = tokenize_and_align_labels(test_data["sentences"], test_data["pos_tags"], train_data["lemmas"])
 
     return train_inputs, dev_inputs, test_inputs
 
@@ -89,6 +94,6 @@ if __name__ == "__main__":
     # Process and save the datasets
     train_inputs, dev_inputs, test_inputs = process_datasets(TRAIN_FILE, DEV_FILE, TEST_FILE)
 
-    save_tokenized_data(train_inputs, os.path.join(DATA_PATH, "train_inputs.pt"))
-    save_tokenized_data(dev_inputs, os.path.join(DATA_PATH, "dev_inputs.pt"))
-    save_tokenized_data(test_inputs, os.path.join(DATA_PATH, "test_inputs.pt"))
+    save_tokenized_data(train_inputs, os.path.join(DATA_PATH, "train_inputs_lemmas.pt"))
+    save_tokenized_data(dev_inputs, os.path.join(DATA_PATH, "dev_inputs_lemmas.pt"))
+    save_tokenized_data(test_inputs, os.path.join(DATA_PATH, "test_inputs_lemmas.pt"))

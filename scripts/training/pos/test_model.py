@@ -3,32 +3,7 @@ from transformers import AutoTokenizer, AutoModelForTokenClassification
 import torch
 import time
 import json
-
-def assemble(tokens: list[str], predictions: list[str], answers: list[str]):
-    tokens.reverse()
-    predictions.reverse()
-    answers.reverse()
-
-    assembled_tokens = []
-    new_predictions = []
-    new_answers = []
-    temp_token = ""    
-    for token, prediction, answer in zip(tokens, predictions, answers):
-        if token.startswith('##'):
-            temp_token = token[2:] + temp_token
-        else:
-            token = token + temp_token
-            assembled_tokens.append(token)
-            new_predictions.append(prediction)
-            new_answers.append(answer)
-            print(f"token: {token}")
-            temp_token = ""
-    assembled_tokens.reverse()
-    new_predictions.reverse()
-    new_answers.reverse()
-
-    print(assembled_tokens, new_predictions, new_answers)
-    return assembled_tokens, new_predictions, new_answers
+from scripts.utils.fragment_assembler import assemble
 
 # define model path
 DATA_PATH = os.environ.get('BUHO_DATA_PATH')  # Replace with the actual dataset path
@@ -63,71 +38,8 @@ start_time = time.time()
 
 model = AutoModelForTokenClassification.from_pretrained(POS_MODEL_PATH)
 tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL_PATH)
-# tokenizer = AutoTokenizer.from_pretrained("dccuchile/bert-base-spanish-wwm-cased")
-# model = AutoModelForTokenClassification.from_pretrained(
-#    "dccuchile/bert-base-spanish-wwm-cased", num_labels=len(POS_TO_ID)
-#)
 model.eval()
 load_time = time.time()
-
-# Test sentence
-# Sentence split into words
-# sentence =         [
-#             "Partidario",
-#             "de",
-#             "la",
-#             "\"",
-#             "perestroika",
-#             "\"",
-#             "de",
-#             "Mijail",
-#             "Gorbachov",
-#             "en",
-#             "la",
-#             "Unión",
-#             "Soviética",
-#             ",",
-#             "en",
-#             "1989",
-#             "entró",
-#             "en",
-#             "conflicto",
-#             "con",
-#             "Yívkov",
-#             ",",
-#             "líder",
-#             "durante",
-#             "35",
-#             "años",
-#             "del",
-#             "de",
-#             "el",
-#             "Partido",
-#             "Comunista",
-#             "y",
-#             "del",
-#             "de",
-#             "el",
-#             "Estado",
-#             "búlgaro",
-#             ",",
-#             "y",
-#             "le",
-#             "acusó",
-#             "en",
-#             "una",
-#             "carta",
-#             "abierta",
-#             "de",
-#             "utilizar",
-#             "métodos",
-#             "poco",
-#             "democráticos",
-#             "de",
-#             "gobierno",
-#             "."
-#         ]
-# text = 'Partidario de la "perestroika" de Mijail Gorbachov en la Unión Soviética, en 1989 entró en conflicto con Yívkov, líder durante 35 años del Partido Comunista y del Estado búlgaro, y le acusó en una carta abierta de utilizar métodos poco democráticos de gobierno.'
 
 # Tokenize input with `is_split_into_words`
 print(sentence)
@@ -174,22 +86,6 @@ init_predictions = torch.argmax(outputs.logits, dim=-1)[0]
 split_tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])  # Convert input IDs to tokens
 predicted_tags = [init_predictions[i].item() for i in range(len(split_tokens))]
 
-# predicted_tags.reverse()
-# split_tokens.reverse()
-# temp_token = ""
-# tokens = []
-# predictions = []
-# for prediction, token in zip(predicted_tags, tokens):
-#     if token.startswith("##"):
-#         temp_token = temp_token + token[2:]
-#     else:
-#         token = token + temp_token
-#         tokens.append(token)
-#         predictions.append(prediction)
-#         temp_token = ""
-# tokens.reverse()
-# predictions.reverse()
-
 tokens = split_tokens
 predictions = predicted_tags
 print(predictions)
@@ -198,8 +94,8 @@ print(len(labels[0]))
 
 total_token=0
 total_correct=0
-# Display the results
 
+# Display the results
 tokens, predictions, answers = assemble(tokens, predictions, labels[0])
 for token, tag, answer in zip(tokens, predictions, answers):
     # Skip special tokens

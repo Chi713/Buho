@@ -1,1 +1,0 @@
-from ..utils.fragment_assembler import assemble

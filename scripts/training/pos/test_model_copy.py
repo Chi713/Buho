@@ -2,6 +2,32 @@ import os
 import torch
 from transformers import AutoTokenizer, AutoModelForTokenClassification
 
+def assemble(tokens: list[str], predictions: list[str], answers: list[str]):
+    tokens.reverse()
+    predictions.reverse()
+    answers.reverse()
+
+    assembled_tokens = []
+    new_predictions = []
+    new_answers = []
+    temp_token = ""    
+    for token, prediction, answer in zip(tokens, predictions, answers):
+        if token.startswith('##'):
+            temp_token = token[2:] + temp_token
+        else:
+            token = token + temp_token
+            assembled_tokens.append(token)
+            new_predictions.append(prediction)
+            new_answers.append(answer)
+            # print(f"token: {token}")
+            temp_token = ""
+    assembled_tokens.reverse()
+    new_predictions.reverse()
+    new_answers.reverse()
+
+    # print(assembled_tokens, new_predictions, new_answers)
+    return assembled_tokens, new_predictions, new_answers
+
 # Environment variables for paths
 DATA_PATH = os.environ.get('BUHO_DATA_PATH')
 MODEL_PATH = os.environ.get('BUHO_MODEL_PATH')
@@ -15,6 +41,7 @@ test_data = torch.load(TEST_PATH)
 input_ids = test_data["input_ids"]          # Tensor of shape [N, seq_length]
 attention_mask = test_data["attention_mask"]# Tensor of shape [N, seq_length]
 labels = test_data["labels"]                # Tensor of shape [N, seq_length]
+# print(f"labels: {labels.shape}")
 
 # Define the POS label mappings
 POS_TO_ID = {
@@ -30,11 +57,11 @@ tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL_PATH)
 model.eval()
 
 # Move to GPU if available
-device = torch.device("cpu")
-model.to(device)
-input_ids = input_ids.to(device)
-attention_mask = attention_mask.to(device)
-labels = labels.to(device)
+# device = torch.device("cpu") # only temp cuz perlmutter
+# model.to(device)
+# input_ids = input_ids.to(device)
+# attention_mask = attention_mask.to(device)
+# labels = labels.to(device)
 
 # Run inference under torch.no_grad() to disable gradient calculations
 with torch.no_grad():
@@ -46,15 +73,22 @@ total_correct = 0
 
 # Evaluate accuracy
 # We assume that the data has special tokens (like [CLS], [SEP]) handled similarly.
-# If you set ignored tokens to -100, skip them.
-for pred_seq, label_seq in zip(predictions, labels):
-    for p, l in zip(pred_seq, label_seq):
+# print(f"prediction: {predictions.shape}")
+
+for input_seq, pred_seq, label_seq in zip(input_ids, predictions, labels):
+    input_seq =  tokenizer.convert_ids_to_tokens(input_seq)
+    pred_seq = [pred_seq[i].item() for i in range(len(input_seq))]
+    label_seq = [label_seq[i].item() for i in range(len(input_seq))]
+    tokens, predictions, answers = assemble(input_seq, pred_seq, label_seq)
+    for t, p, a in zip(tokens, predictions, answers):
         # If your dataset uses -100 or another special label to mark padding/ignored positions, skip them:
-        if l.item() == -100:
+        if a == 0:
             continue
         total_token += 1
-        if p.item() == l.item():
+        if p == a:
             total_correct += 1
+        if total_token % 100 == 0:
+            print(f"correct {total_correct} out of {total_token} tokens")
 
 accuracy = total_correct / total_token if total_token > 0 else 0.0
 print(f"Overall Accuracy: {accuracy * 100:.2f}%")

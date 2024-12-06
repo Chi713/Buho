@@ -17,17 +17,18 @@ import numpy as np
 # Paths to tokenized data
 DATA_PATH = os.environ.get('BUHO_DATA_PATH')
 MODEL_PATH = os.environ.get('BUHO_MODEL_PATH')
-NER_MODEL_PATH = os.path.join(MODEL_PATH, "ner")
+POS_MODEL_PATH = os.path.join(MODEL_PATH, "pos")
 TOKENIZER_MODEL_PATH = os.path.join(MODEL_PATH, "tokenizer")
 PRETRAINED_MODEL = os.environ.get('PRETRAINED_MODEL')
 
-TRAIN_PATH = os.path.join(DATA_PATH, "train_inputs_ner.pt")
-DEV_PATH = os.path.join(DATA_PATH, "dev_inputs_ner.pt")
-TEST_PATH = os.path.join(DATA_PATH, "test_inputs_ner.pt")
+TRAIN_PATH = os.path.join(DATA_PATH, "train_inputs_pos.pt")
+DEV_PATH = os.path.join(DATA_PATH, "dev_inputs_pos.pt")
+TEST_PATH = os.path.join(DATA_PATH, "test_inputs_pos.pt")
 
-# NER Mapping
-NER_TO_ID = {'O': 0, 'B-PER': 1, 'I-PER': 2, 'B-ORG': 3, 'I-ORG': 4, 'B-LOC': 5, 'I-LOC': 6, 'B-MISC': 7, 'I-MISC': 8}
-ID_TO_NER = {v: k for k, v in NER_TO_ID.items()}
+# POS Mapping
+POS_TO_ID = {'-PAD-': 0, 'ADJ': 1, 'ADP': 2, 'ADV': 3, 'AUX': 4, 'CCONJ': 5, 'DET': 6, 'INTJ': 7, 'NOUN': 8, 'NUM': 9, 
+             'PART': 10, 'PRON': 11, 'PROPN': 12, 'PUNCT': 13, 'SCONJ': 14, 'SYM': 15, 'VERB': 16, 'X': 17, '_': 18 }
+ID_TO_POS = {v: k for k, v in POS_TO_ID.items()}
 
 # class BertWithCRF(torch.nn.Module):
 #     def __init__(self, model_name, num_labels):
@@ -50,7 +51,7 @@ ID_TO_NER = {v: k for k, v in NER_TO_ID.items()}
 #             return predictions
 
 # Dataset Class
-class NERTaggingDataset(Dataset):
+class POSTaggingDataset(Dataset):
     def __init__(self, data_path):
         self.data = torch.load(data_path)
 
@@ -68,15 +69,15 @@ class NERTaggingDataset(Dataset):
         return data
 
 # Load Datasets
-train_dataset = NERTaggingDataset(TRAIN_PATH)
-dev_dataset = NERTaggingDataset(DEV_PATH)
-test_dataset = NERTaggingDataset(TEST_PATH)
+train_dataset = POSTaggingDataset(TRAIN_PATH)
+dev_dataset = POSTaggingDataset(DEV_PATH)
+test_dataset = POSTaggingDataset(TEST_PATH)
 
 # Load BERT Model and Tokenizer
 tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL_PATH)
 model = AutoModelForTokenClassification.from_pretrained(
     PRETRAINED_MODEL,
-    num_labels=len(NER_TO_ID)  # Set the number of labels
+    num_labels=len(POS_TO_ID)  # Set the number of labels
 )
 
 model.resize_token_embeddings(len(tokenizer))
@@ -89,9 +90,9 @@ training_args = TrainingArguments(
     output_dir="../results",
     eval_strategy="epoch",  # Replace evaluation_strategy with eval_strategy
     learning_rate=5e-5,
-    per_device_train_batch_size=32,
-    per_device_eval_batch_size=32,
-    num_train_epochs=8,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=16,
+    num_train_epochs=16,
     weight_decay=0.01,
     logging_dir="../logs",
     save_total_limit=2,
@@ -136,7 +137,7 @@ for pred, label in zip(predictions, labels):
 
 # Dynamically include only the labels present in the test set
 unique_labels = sorted(set(y_true))  # Ensure unique labels in the test set
-filtered_target_names = [ID_TO_NER[i] for i in unique_labels]
+filtered_target_names = [ID_TO_POS[i] for i in unique_labels]
 
 print(classification_report(
     y_true,
@@ -146,5 +147,5 @@ print(classification_report(
 ))
 
 # Save Model
-model.save_pretrained(NER_MODEL_PATH)
+model.save_pretrained(POS_MODEL_PATH)
 print(f"Model and tokenizer saved to '{MODEL_PATH}'.")

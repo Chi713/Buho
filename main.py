@@ -1,6 +1,7 @@
 
 import os
 from scripts.utils import fragment_assembler as frag
+from scripts.training.lemma import lemmatizer as lem
 
 # Define paths
 DATA_PATH = os.environ.get('BUHO_DATA_PATH')
@@ -52,7 +53,8 @@ def main():
         for (ner_token, ner_label), (pos_token, pos_label) in zip(ner_result, pos_result):
             # Assuming tokens from both results should match
             if ner_token not in ["[CLS]", "[SEP]"]:  # Skip special tokens if necessary
-                print(f"{ner_token}: {ner_label}: {pos_label}")
+                lemma = lem.lemmatize(ner_token, pos_label)
+                print(f"{ner_token}: {ner_label}: {pos_label}: {lemma}")
 
 if __name__ == "__main__":
     main()

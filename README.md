@@ -20,19 +20,29 @@ export environment variables
 
 In scripts/tokenizer
 
-step 1: run add_tokens.py
+step 1: train_tokenizer.py
 
-step 2: run check_tokens.py
 
-step 3: run parse_data.py
 
 **POS**
 
 in scripts/pos
 
+step 0: run parse_data.py
+
 step 1: run tokenizer_pos.py
 
 step 2: run train_pos_model.py
+
+**NER**
+
+in scripts/ner
+
+step 0: run parse_data.py
+
+step 1: run tokenizer_ner.py
+
+step 2: run train_ner_model.py
 
 ## Example .env file
 

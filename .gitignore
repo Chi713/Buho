@@ -1,7 +1,8 @@
 venv/
 .env
-.sh
+*.sh
 cache/
 results/
 models/
 logs/
+__pycache__/

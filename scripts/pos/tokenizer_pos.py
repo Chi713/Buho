@@ -3,14 +3,21 @@ import json
 import torch
 from transformers import AutoTokenizer
 
+# define model path
+MODELS_PATH = os.environ.get('BUHO_MODELS_PATH')
+MODEL_PATH = os.environ.get('BUHO_MODEL_PATH')
+POS_MODEL_PATH = os.path.join(MODEL_PATH, "pos")
+TOKENIZER_MODEL_PATH = os.path.join(MODEL_PATH, "tokenizer")
+
 # Load the BERT tokenizer
-tokenizer = AutoTokenizer.from_pretrained("dccuchile/bert-base-spanish-wwm-cased")
+tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL_PATH)
+# tokenizer = AutoTokenizer.from_pretrained("dccuchile/bert-base-spanish-wwm-cased")
 
 # Paths to your data files
 DATA_PATH = os.environ.get('BUHO_DATA_PATH')  # Replace with the actual dataset path
-TRAIN_FILE = os.path.join(DATA_PATH, "train_data_updated.json")
-DEV_FILE = os.path.join(DATA_PATH, "dev_data_updated.json")
-TEST_FILE = os.path.join(DATA_PATH, "test_data_updated.json")
+TRAIN_FILE = os.path.join(DATA_PATH, "train_data.json")
+DEV_FILE = os.path.join(DATA_PATH, "dev_data.json")
+TEST_FILE = os.path.join(DATA_PATH, "test_data.json")
 
 # Load your data
 def load_data(file_path):
@@ -44,21 +51,24 @@ def tokenize_and_align_labels(sentences, pos_tags, max_length=256):
     for i, sentence in enumerate(sentences):
         word_ids = inputs.word_ids(batch_index=i)  # Map subword tokens to original words
         label_ids = []
-        previous_word_idx = None
 
-        for word_idx in word_ids:
-            if word_idx is None or word_idx == previous_word_idx:
-                # Set -100 for padding and subword tokens (ignored during loss computation)
-                label_ids.append(-100)
+        for idx, word_idx in enumerate(word_ids):
+            if word_idx is None:
+            # Special tokens like [CLS], [SEP], or padding
+                label_ids.append(0)
             else:
-                label_ids.append(pos_tags[i][word_idx])  # Align POS tag to the original word
-            previous_word_idx = word_idx
+            # Check the next token to see if it belongs to the same word
+                if idx < len(word_ids) - 1 and word_ids[idx + 1] == word_idx:
+                    # Another subword for the same word is coming next, so this is NOT the last subword
+                    label_ids.append(18)  # Ignored subword token
+                else:
+                # This is the last subword of the word (or the only one if it's a single-subword word)
+                    label_ids.append(pos_tags[i][word_idx])
 
         labels.append(label_ids)
-
-    # Add aligned labels to inputs
     inputs["labels"] = torch.tensor(labels)
     return inputs
+
 
 # Process datasets
 def process_datasets(train_file, dev_file, test_file):

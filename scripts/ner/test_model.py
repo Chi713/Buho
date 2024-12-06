@@ -30,14 +30,18 @@ def assemble(tokens: list[str], predictions: list[str], answers: list[str]):
     print(assembled_tokens, new_predictions, new_answers)
     return assembled_tokens, new_predictions, new_answers
 
+# import sys
+# sys.path.append("..")
+# from utils.fragment_assembler import assemble
 # define model path
+# from utils.fragment_assembler import assemble
 DATA_PATH = os.environ.get('BUHO_DATA_PATH')  # Replace with the actual dataset path
 MODEL_PATH = os.environ.get('BUHO_MODEL_PATH') #+ '_v2'
-POS_MODEL_PATH = os.path.join(MODEL_PATH, "pos")
+NER_MODEL_PATH = os.path.join(MODEL_PATH, "ner")
 TOKENIZER_MODEL_PATH = os.path.join(MODEL_PATH, "tokenizer")
 
-TRAIN_PATH = os.path.join(DATA_PATH, "train_inputs_pos.pt")
-TEST_FILE = os.path.join(DATA_PATH, "test_pos_data.json")
+TRAIN_PATH = os.path.join(DATA_PATH, "train_inputs_ner.pt")
+TEST_FILE = os.path.join(DATA_PATH, "test_ner_data.json")
 def load_data(file_path):
     """Loads the JSON data file."""
     with open(file_path, "r", encoding="utf-8") as f:
@@ -45,27 +49,26 @@ def load_data(file_path):
 
 data = load_data(TEST_FILE)
 
-def insert_return(ins_list=[]): 
-    ins_list.insert(0,-100) # add initial [CLS] bert token
-    ins_list.append(-100) # add final [SEP] bert token
-    return ins_list
+# def insert_return(ins_list=[]): 
+#     ins_list.insert(0,-100) # add initial [CLS] bert token
+#     ins_list.append(-100) # add final [SEP] bert token
+#     return ins_list
 
-sentence = [ pos_tags_list for pos_tags_list in data['sentences']][0]
-answers = [ pos_tags_list for pos_tags_list in data['pos_tags']][0]
-# Define ID_TO_POS mapping
-POS_TO_ID = {'-PAD-': 0, 'ADJ': 1, 'ADP': 2, 'ADV': 3, 'AUX': 4, 'CCONJ': 5, 'DET': 6, 'INTJ': 7, 'NOUN': 8, 'NUM': 9, 
-             'PART': 10, 'PRON': 11, 'PROPN': 12, 'PUNCT': 13, 'SCONJ': 14, 'SYM': 15, 'VERB': 16, 'X': 17, '_': 18 }
-ID_TO_POS = {v: k for k, v in POS_TO_ID.items()}
+sentence = [ ner_tags_list for ner_tags_list in data['sentences']][0]
+answers = [ ner_tags_list for ner_tags_list in data['ner_tags']][0]
+# Define ID_TO_NER mapping
+NER_TO_ID = {'O': 0, 'B-PER': 1, 'I-PER': 2, 'B-ORG': 3, 'I-ORG': 4, 'B-LOC': 5, 'I-LOC': 6, 'B-MISC': 7, 'I-MISC': 8}
+ID_TO_NER = {v: k for k, v in NER_TO_ID.items()}
 
 
 # Load model and tokenizer
 start_time = time.time()
 
-model = AutoModelForTokenClassification.from_pretrained(POS_MODEL_PATH)
+model = AutoModelForTokenClassification.from_pretrained(NER_MODEL_PATH)
 tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL_PATH)
 # tokenizer = AutoTokenizer.from_pretrained("dccuchile/bert-base-spanish-wwm-cased")
 # model = AutoModelForTokenClassification.from_pretrained(
-#    "dccuchile/bert-base-spanish-wwm-cased", num_labels=len(POS_TO_ID)
+#    "dccuchile/bert-base-spanish-wwm-cased", num_labels=len(NER_TO_ID)
 #)
 model.eval()
 load_time = time.time()
@@ -146,13 +149,13 @@ for word_idx in word_ids:
         label_ids.append(0)
     elif word_idx == previous_word_idx:
         # Set -100 for padding and subword tokens (ignored during loss computation)
-        label_ids.append(18)
+        label_ids.append(0)
     else:
-        label_ids.append(answers[word_idx])  # Align POS tag to the original word
+        label_ids.append(answers[word_idx])  # Align NER tag to the original word
     previous_word_idx = word_idx
 
 labels.append(label_ids)
-# answers = [ insert_return(pos_tags_list) for pos_tags_list in labels][0]
+# answers = [ insert_return(ner_tags_list) for ner_tags_list in labels][0]
 print(answers)
 
 
@@ -199,13 +202,12 @@ print(len(labels[0]))
 total_token=0
 total_correct=0
 # Display the results
-
 tokens, predictions, answers = assemble(tokens, predictions, labels[0])
 for token, tag, answer in zip(tokens, predictions, answers):
     # Skip special tokens
     if token in ["[CLS]", "[SEP]"]:
         continue
-    print(f"{token}: {ID_TO_POS.get(tag, 'UNKNOWN')}: {answer}")
+    print(f"{token}: {ID_TO_NER.get(tag, 'UNKNOWN')}: {answer}")
     total_token += 1
     total_correct += tag == answer
 
